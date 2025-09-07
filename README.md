@@ -24,23 +24,10 @@ A Next.js application for tracking and managing JIRA worklogs with advanced sear
    pnpm install
    ```
 
-2. **Configure environment variables:**
-   ```bash
-   cp .env.example .env.local
-   ```
-   
-   Update `.env.local` with your JIRA credentials:
-   ```env
-   JIRA_EMAIL=your-email@company.com
-   JIRA_API_TOKEN=your-generated-api-token-from-atlassian
-   JIRA_SITE_URL=https://your-domain.atlassian.net
-   JIRA_API_URL=https://your-domain.atlassian.net/rest/api/3
-   ```
-
-3. **Generate a JIRA API token:**
+2. **Generate a JIRA API token:**
    - Go to [Atlassian Account Settings](https://id.atlassian.com/manage-profile/security/api-tokens)
    - Click "Create API token"
-   - Copy the generated token to your `.env.local` file
+   - Save the token - you'll need it when logging into the application
 
 ## Development
 
@@ -50,7 +37,7 @@ Run the development server:
 pnpm dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) with your browser. You'll be prompted to log in with your JIRA email and API token.
 
 ## Available Scripts
 
@@ -65,7 +52,7 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 - **Frontend**: Next.js 15 with React 19
 - **Backend**: Next.js API routes as JIRA proxy
 - **Styling**: Tailwind CSS
-- **Authentication**: JIRA Basic Authentication (server-side)
+- **Authentication**: JIRA Basic Authentication with secure HTTP-only cookies
 - **API Client**: Axios for HTTP requests
 - **Code Quality**: Biome for linting and formatting
 
@@ -82,13 +69,13 @@ The application uses JIRA REST API v3. Key endpoints:
 
 **Common Issues:**
 
-1. **"JIRA configuration missing"** - Check your `.env.local` file has all required variables
-2. **"Failed to fetch worklogs"** - Verify your API token and email are correct
-3. **"No worklogs found"** - Check your date range and ensure you have logged work in JIRA
+1. **"Failed to fetch worklogs"** - Verify your API token and email are correct in the login form
+2. **"No worklogs found"** - Check your date range and ensure you have logged work in JIRA
+3. **Login issues** - Make sure your JIRA API token is active and has the correct permissions
 
 ## Security
 
-- API credentials are stored server-side only (not exposed to client)
+- API credentials are stored in secure HTTP-only cookies (not exposed to client)
 - All API calls use HTTPS
-- Never commit your `.env.local` file to version control
+- Credentials are never stored in client-side code
 - Next.js API routes act as a secure proxy to JIRA API

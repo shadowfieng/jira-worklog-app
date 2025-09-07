@@ -12,12 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `pnpm format` - Format code with Biome
 
 ### Environment Setup
-- Copy `.env.example` to `.env.local` and configure with JIRA API credentials
-- Required environment variables (server-side only for security):
-  - `JIRA_EMAIL` - Your JIRA account email
-  - `JIRA_API_TOKEN` - API token from Atlassian Account Settings
-  - `JIRA_SITE_URL` - Your Atlassian instance URL
-  - `JIRA_API_URL` - JIRA REST API URL (usually {SITE_URL}/rest/api/3)
+- No environment variables required - authentication is handled through the login interface
 
 ## Architecture Overview
 
@@ -28,8 +23,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Solves CORS issues when calling JIRA API directly from browser
 
 ### Authentication Flow
-- Uses JIRA Basic Authentication with email and API token
-- Credentials handled server-side in API routes for security
+- Users authenticate through the login interface with email and API token
+- Credentials are stored in secure HTTP-only cookies
 - API token can be generated from Atlassian Account Settings > Security > API tokens
 
 ### Core Components
@@ -53,7 +48,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - `/api/jira/myself` - Get current user info
   - `/api/jira/project` - Get accessible projects
   - `/api/jira/site-info` - Get JIRA site URL for frontend links
-- Handle authentication with server-side credentials
+- Handle authentication with credentials from secure cookies
 - Provide error handling and CORS-free access
 - Search endpoint migrated to use `/rest/api/3/search/jql` from deprecated `/rest/api/3/search`
 
@@ -69,7 +64,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### Data Flow
 1. Dashboard initializes JiraAPIService (no credentials needed on client)
 2. Service makes requests to Next.js API routes (`/api/jira/*`)
-3. API routes authenticate with JIRA using server-side credentials
+3. API routes authenticate with JIRA using credentials from secure cookies
 4. API routes construct JQL queries and fetch data from JIRA REST API
 5. Data is proxied back through API routes to the frontend
 6. Frontend processes and displays the worklog data
@@ -100,9 +95,9 @@ src/
 ### Development Notes
 - Application expects JIRA Cloud instances (not Server/Data Center)
 - API tokens must be generated from Atlassian Account Settings > Security > API tokens
-- Credentials are stored server-side only for security
+- Credentials are stored in secure HTTP-only cookies for security
 - API proxy routes solve CORS issues and protect credentials
 - Search endpoint uses JIRA REST API v3 `/search/jql` endpoint (migrated from deprecated `/search`)
 - Error handling includes specific messages for common JIRA access issues
 - The `jira-api-examples.js` file contains additional API examples using basic auth
-- Environment variables are server-side only (no NEXT_PUBLIC prefix needed)
+- Authentication is handled through the login interface, no environment variables needed

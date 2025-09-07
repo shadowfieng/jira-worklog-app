@@ -2,7 +2,7 @@
 
 import {format, formatDistanceToNow} from 'date-fns'
 import {useRouter, useSearchParams} from 'next/navigation'
-import {useCallback, useEffect, useState} from 'react'
+import {useCallback, useEffect, useState, Suspense} from 'react'
 import {ThemeToggleButton} from '@/components/theme-toggle'
 import {Button} from '@/components/ui/button'
 import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card'
@@ -19,7 +19,7 @@ interface WorklogWithIssue extends JiraWorklog {
   issue: JiraIssue
 }
 
-export default function DashboardPage() {
+function DashboardContent() {
   const router = useRouter()
   const urlSearchParams = useSearchParams()
   const [worklogs, setWorklogs] = useState<WorklogWithIssue[]>([])
@@ -508,5 +508,20 @@ export default function DashboardPage() {
         </Card>
       </div>
     </div>
+  )
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-2 text-sm text-muted-foreground">Loading dashboard...</p>
+        </div>
+      </div>
+    }>
+      <DashboardContent />
+    </Suspense>
   )
 }
