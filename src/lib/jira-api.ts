@@ -105,15 +105,19 @@ export class JiraAPIService {
       // Build JQL query - always filter by current user's worklogs
       let jql = "worklogAuthor = currentUser()";
 
-      // Add date filters
+      // Add date filters - send dates as UTC to JIRA
       if (startDate) {
-        jql += ` AND worklogDate >= "${startDate}"`;
+        // Convert to UTC date for consistent querying
+        const startDateUtc = new Date(`${startDate}T00:00:00.000Z`);
+        jql += ` AND worklogDate >= "${startDateUtc.toISOString().split('T')[0]}"`;
       } else {
         jql += ` AND worklogDate >= -30d`; // Default to last 30 days
       }
 
       if (endDate) {
-        jql += ` AND worklogDate <= "${endDate}"`;
+        // Convert to UTC date for consistent querying  
+        const endDateUtc = new Date(`${endDate}T23:59:59.999Z`);
+        jql += ` AND worklogDate <= "${endDateUtc.toISOString().split('T')[0]}"`;
       }
 
       // If specific issue is requested, combine with user filter
@@ -167,16 +171,23 @@ export class JiraAPIService {
                 return false;
               }
 
-              // Apply date filters
-              if (
-                startDate &&
-                new Date(worklog.started) < new Date(startDate)
-              ) {
-                return false;
+              // Apply date filters using UTC comparison
+              if (startDate) {
+                const worklogDate = new Date(worklog.started);
+                const filterStartDate = new Date(`${startDate}T00:00:00.000Z`);
+                
+                if (worklogDate < filterStartDate) {
+                  return false;
+                }
               }
 
-              if (endDate && new Date(worklog.started) > new Date(endDate)) {
-                return false;
+              if (endDate) {
+                const worklogDate = new Date(worklog.started);
+                const filterEndDate = new Date(`${endDate}T23:59:59.999Z`);
+                
+                if (worklogDate > filterEndDate) {
+                  return false;
+                }
               }
 
               return true;
