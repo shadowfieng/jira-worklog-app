@@ -243,6 +243,34 @@ function DashboardContent() {
     )
   }
 
+  const groupWorklogsByDate = () => {
+    const groups: Record<string, WorklogWithIssue[]> = {}
+    
+    worklogs.forEach((worklog) => {
+      const date = format(new Date(worklog.started), 'yyyy-MM-dd')
+      if (!groups[date]) {
+        groups[date] = []
+      }
+      groups[date].push(worklog)
+    })
+
+    // Sort groups by date (most recent first) and sort worklogs within each group
+    const sortedGroups = Object.entries(groups)
+      .sort(([a], [b]) => new Date(b).getTime() - new Date(a).getTime())
+      .map(([date, groupWorklogs]) => ({
+        date,
+        worklogs: groupWorklogs.sort(
+          (a, b) => new Date(b.started).getTime() - new Date(a.started).getTime()
+        ),
+        totalTime: groupWorklogs.reduce(
+          (sum, worklog) => sum + worklog.timeSpentSeconds,
+          0
+        )
+      }))
+
+    return sortedGroups
+  }
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -439,66 +467,83 @@ function DashboardContent() {
                 </p>
               </div>
             ) : (
-              <div className="divide-y divide-border">
-                {worklogs.map((worklog) => (
-                  <div
-                    key={worklog.id}
-                    className="p-4 sm:p-6 hover:bg-accent/50"
-                  >
-                    <div className="flex items-start space-x-3 sm:space-x-4">
-                      <div className="flex-shrink-0">
-                        {worklog.issue.fields.issuetype.iconUrl ? (
-                          <img
-                            src={worklog.issue.fields.issuetype.iconUrl}
-                            alt={worklog.issue.fields.issuetype.name}
-                            className="h-5 w-5 sm:h-6 sm:w-6"
-                          />
-                        ) : (
-                          <div className="h-5 w-5 sm:h-6 sm:w-6 bg-muted rounded"></div>
-                        )}
+              <div className="space-y-6">
+                {groupWorklogsByDate().map((group) => (
+                  <div key={group.date}>
+                    {/* Date Header */}
+                    <div className="flex items-center justify-between px-4 sm:px-6 py-3 bg-muted/30 border-b">
+                      <h3 className="text-lg font-semibold">
+                        {format(new Date(group.date), 'EEEE, MMMM dd, yyyy')}
+                      </h3>
+                      <div className="text-sm font-medium text-green-600 dark:text-green-400">
+                        {formatTimeSpent(group.totalTime)}
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-2">
-                          <a
-                            href={
-                              jiraSiteUrl
-                                ? `${jiraSiteUrl}/browse/${worklog.issue.key}`
-                                : '#'
-                            }
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm font-medium text-primary hover:text-primary/80 flex-shrink-0"
-                          >
-                            {worklog.issue.key}
-                          </a>
-                          <span className="hidden sm:inline text-sm text-muted-foreground">
-                            •
-                          </span>
-                          <span className="text-sm line-clamp-2 sm:truncate">
-                            {worklog.issue.fields.summary}
-                          </span>
-                        </div>
-                        <div className="mt-2 flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-4 text-xs sm:text-sm text-muted-foreground">
-                          <span className="flex-shrink-0">
-                            Logged{' '}
-                            {formatDistanceToNow(new Date(worklog.started), {
-                              addSuffix: true
-                            })}
-                          </span>
-                          <span className="font-medium text-green-600 dark:text-green-400 flex-shrink-0">
-                            {formatTimeSpent(worklog.timeSpentSeconds)}
-                          </span>
-                          <span className="flex-shrink-0">
-                            {format(new Date(worklog.started), 'MMM dd, yyyy')}
-                          </span>
-                        </div>
-                        {worklog.comment && (
-                          <div className="mt-2 text-xs sm:text-sm bg-muted rounded p-2 line-clamp-3">
-                            {worklog.comment.content?.[0]?.content?.[0]?.text ||
-                              'No comment'}
+                    </div>
+                    
+                    {/* Worklogs for this date */}
+                    <div className="divide-y divide-border">
+                      {group.worklogs.map((worklog) => (
+                        <div
+                          key={worklog.id}
+                          className="p-4 sm:p-6 hover:bg-accent/50"
+                        >
+                          <div className="flex items-start space-x-3 sm:space-x-4">
+                            <div className="flex-shrink-0">
+                              {worklog.issue.fields.issuetype.iconUrl ? (
+                                <img
+                                  src={worklog.issue.fields.issuetype.iconUrl}
+                                  alt={worklog.issue.fields.issuetype.name}
+                                  className="h-5 w-5 sm:h-6 sm:w-6"
+                                />
+                              ) : (
+                                <div className="h-5 w-5 sm:h-6 sm:w-6 bg-muted rounded"></div>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-2">
+                                <a
+                                  href={
+                                    jiraSiteUrl
+                                      ? `${jiraSiteUrl}/browse/${worklog.issue.key}`
+                                      : '#'
+                                  }
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-sm font-medium text-primary hover:text-primary/80 flex-shrink-0"
+                                >
+                                  {worklog.issue.key}
+                                </a>
+                                <span className="hidden sm:inline text-sm text-muted-foreground">
+                                  •
+                                </span>
+                                <span className="text-sm line-clamp-2 sm:truncate">
+                                  {worklog.issue.fields.summary}
+                                </span>
+                              </div>
+                              <div className="mt-2 flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-4 text-xs sm:text-sm text-muted-foreground">
+                                <span className="flex-shrink-0">
+                                  Logged{' '}
+                                  {formatDistanceToNow(new Date(worklog.started), {
+                                    addSuffix: true
+                                  })}
+                                </span>
+                                <span className="font-medium text-green-600 dark:text-green-400 flex-shrink-0">
+                                  {formatTimeSpent(worklog.timeSpentSeconds)}
+                                </span>
+                                <span className="flex-shrink-0">
+                                  {format(new Date(worklog.started), 'HH:mm')}
+                                </span>
+                              </div>
+                              {worklog.comment && (
+                                <div className="mt-2 text-xs sm:text-sm bg-muted rounded p-2 line-clamp-3">
+                                  {worklog.comment.content?.[0]?.content?.[0]?.text ||
+                                    'No comment'}
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        )}
-                      </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 ))}
