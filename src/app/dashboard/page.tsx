@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import {
   JiraAPIService,
   type JiraIssue,
+  type JiraUser,
   type JiraWorklog,
   type WorklogSearchParams,
 } from "@/lib/jira-api";
@@ -30,9 +31,12 @@ function DashboardContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [jiraSiteUrl, setJiraSiteUrl] = useState<string>("");
-  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [currentUser, setCurrentUser] = useState<JiraUser | null>(null);
   const [projects, setProjects] = useState<MultiSelectOption[]>([]);
   const [loadingProjects, setLoadingProjects] = useState(false);
+  // Create a shared JiraAPIService instance to maintain cache
+  const [jiraService] = useState(() => new JiraAPIService())
+
 
   // Initialize search params from URL or defaults
   const [searchParams, setSearchParams] = useState<WorklogSearchParams>(() => {
@@ -87,12 +91,11 @@ function DashboardContent() {
       .then((data) => setJiraSiteUrl(data.siteUrl))
       .catch(() => setJiraSiteUrl(""));
 
-    fetch("/api/jira/myself")
-      .then((res) => res.json())
+    // Use the shared JiraAPIService instance to get current user (with caching)
+    jiraService
+      .getCurrentUser()
       .then((data) => {
-        if (!data.error) {
-          setCurrentUser(data);
-        }
+        setCurrentUser(data);
       })
       .catch(() => setCurrentUser(null));
 
@@ -116,16 +119,20 @@ function DashboardContent() {
         setProjects([]);
       })
       .finally(() => setLoadingProjects(false));
-  }, []);
+  }, [jiraService]);
 
   // Logout function
   const handleLogout = async () => {
     try {
+      // Clear user cache before logout
+      jiraService.clearUserCache();
+
       await fetch("/api/auth/logout", { method: "POST" });
       router.push("/login");
     } catch (error) {
       console.error("Logout error:", error);
-      // Force redirect even if logout fails
+      // Clear cache and force redirect even if logout fails
+      jiraService.clearUserCache();
       router.push("/login");
     }
   };
@@ -138,7 +145,6 @@ function DashboardContent() {
         setError(null);
         setWorklogs([]); // Clear existing worklogs when starting new search
 
-        const jiraService = new JiraAPIService();
         const allIssues: Record<string, JiraIssue> = {};
 
         const result = await jiraService.getWorklogs(params, {
@@ -214,6 +220,12 @@ function DashboardContent() {
         setWorklogs(finalWorklogsWithIssues);
       } catch (err: any) {
         console.error("Error fetching worklogs:", err);
+
+        // Clear user cache if authentication error
+        if (err.response?.status === 401 || err.response?.status === 403) {
+          jiraService.clearUserCache();
+        }
+
         setError(
           err.response?.data?.error ||
             "Failed to fetch worklogs. Please check your JIRA configuration.",
@@ -224,7 +236,7 @@ function DashboardContent() {
     }, 500); // 500ms debounce
 
     return () => clearTimeout(timeoutId);
-  }, []);
+  }, [jiraService]);
 
   // Handler for the search button
   const handleSearch = useCallback(() => {
