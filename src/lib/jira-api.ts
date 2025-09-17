@@ -49,6 +49,12 @@ export interface JiraIssue {
       displayName: string;
       avatarUrls: Record<string, string>;
     };
+    worklog?: {
+      total: number;
+      maxResults: number;
+      startAt: number;
+      worklogs: JiraWorklog[];
+    };
   };
 }
 
@@ -191,7 +197,7 @@ export class JiraAPIService {
         },
       });
 
-      const issues = searchResponse.data.issues;
+      const issues: JiraIssue[] = searchResponse.data.issues;
       const issuesMap: Record<string, JiraIssue> = {};
       const allWorklogs: JiraWorklog[] = [];
 
@@ -207,7 +213,7 @@ export class JiraAPIService {
 
       // Fetch worklogs for all issues in parallel
       const worklogPromises = issues
-        .filter((issue) => issue.fields.worklog?.total > 0)
+        .filter((issue) => issue.fields.worklog?.total && issue.fields.worklog.total > 0)
         .map(async (issue) => {
           try {
             const worklogResponse = await this.client.get(

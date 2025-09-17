@@ -1,6 +1,11 @@
 {
   "permissions": {
-    "allow": ["Bash(pnpm dlx:*)", "Bash(git add:*)", "Bash(pnpm format:*)"],
+    "allow": [
+      "Bash(pnpm dlx:*)",
+      "Bash(git add:*)",
+      "Bash(pnpm format:*)",
+      "Bash(pnpm run:*)"
+    ],
     "deny": [],
     "ask": []
   }
