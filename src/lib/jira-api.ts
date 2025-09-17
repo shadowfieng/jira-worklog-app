@@ -163,9 +163,12 @@ export class JiraAPIService {
           self: issue.self,
           fields: issue.fields,
         };
+      }
 
-        // Get detailed worklogs for this issue only if worklog field indicates there are worklogs
-        if (issue.fields.worklog?.total > 0) {
+      // Fetch worklogs for all issues in parallel
+      const worklogPromises = issues
+        .filter((issue) => issue.fields.worklog?.total > 0)
+        .map(async (issue) => {
           try {
             const worklogResponse = await this.client.get(
               `/issue/${issue.key}/worklog`,
@@ -208,8 +211,6 @@ export class JiraAPIService {
               }),
             );
 
-            allWorklogs.push(...processedWorklogs);
-
             // Emit progress update if callback is provided and we have worklogs
             if (
               progressCallback?.onWorklogsFound &&
@@ -219,15 +220,25 @@ export class JiraAPIService {
                 [issue.key]: issuesMap[issue.key],
               });
             }
+
+            return processedWorklogs;
           } catch (worklogError) {
             console.warn(
               `Failed to fetch worklogs for issue ${issue.key}:`,
               worklogError,
             );
-            // Continue processing other issues even if one fails
+            // Return empty array for failed requests to continue processing
+            return [];
           }
-        }
-      }
+        });
+
+      // Wait for all worklog requests to complete
+      const worklogResults = await Promise.all(worklogPromises);
+
+      // Flatten all worklogs into a single array
+      worklogResults.forEach((worklogs) => {
+        allWorklogs.push(...worklogs);
+      });
 
       return {
         worklogs: allWorklogs.sort(
