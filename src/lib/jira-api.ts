@@ -57,6 +57,7 @@ export interface WorklogSearchParams {
   endDate?: string;
   issueKey?: string;
   projectKey?: string;
+  projectKeys?: string[];
   author?: string;
   maxResults?: number;
   startAt?: number;
@@ -109,15 +110,15 @@ export class JiraAPIService {
       if (startDate) {
         // Convert to UTC date for consistent querying
         const startDateUtc = new Date(`${startDate}T00:00:00.000Z`);
-        jql += ` AND worklogDate >= "${startDateUtc.toISOString().split('T')[0]}"`;
+        jql += ` AND worklogDate >= "${startDateUtc.toISOString().split("T")[0]}"`;
       } else {
         jql += ` AND worklogDate >= -30d`; // Default to last 30 days
       }
 
       if (endDate) {
-        // Convert to UTC date for consistent querying  
+        // Convert to UTC date for consistent querying
         const endDateUtc = new Date(`${endDate}T23:59:59.999Z`);
-        jql += ` AND worklogDate <= "${endDateUtc.toISOString().split('T')[0]}"`;
+        jql += ` AND worklogDate <= "${endDateUtc.toISOString().split("T")[0]}"`;
       }
 
       // If specific issue is requested, combine with user filter
@@ -127,6 +128,13 @@ export class JiraAPIService {
 
       if (params.projectKey) {
         jql += ` AND project = "${params.projectKey}"`;
+      }
+
+      if (params.projectKeys && params.projectKeys.length > 0) {
+        const projectFilter = params.projectKeys
+          .map((key) => `"${key}"`)
+          .join(", ");
+        jql += ` AND project IN (${projectFilter})`;
       }
 
       // Note: author parameter is redundant since we always filter by currentUser()
@@ -175,7 +183,7 @@ export class JiraAPIService {
               if (startDate) {
                 const worklogDate = new Date(worklog.started);
                 const filterStartDate = new Date(`${startDate}T00:00:00.000Z`);
-                
+
                 if (worklogDate < filterStartDate) {
                   return false;
                 }
@@ -184,7 +192,7 @@ export class JiraAPIService {
               if (endDate) {
                 const worklogDate = new Date(worklog.started);
                 const filterEndDate = new Date(`${endDate}T23:59:59.999Z`);
-                
+
                 if (worklogDate > filterEndDate) {
                   return false;
                 }
