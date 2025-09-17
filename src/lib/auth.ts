@@ -8,9 +8,9 @@ export interface JiraAuth {
 }
 
 export function getAuthFromCookies(request: NextRequest): JiraAuth | null {
-  const email = request.cookies.get('jira-email')?.value;
-  const token = request.cookies.get('jira-token')?.value;
-  const siteUrl = request.cookies.get('jira-site-url')?.value;
+  const email = request.cookies.get("jira-email")?.value;
+  const token = request.cookies.get("jira-token")?.value;
+  const siteUrl = request.cookies.get("jira-site-url")?.value;
 
   if (!email || !token || !siteUrl) {
     return null;

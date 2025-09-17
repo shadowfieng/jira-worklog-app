@@ -35,8 +35,7 @@ function DashboardContent() {
   const [projects, setProjects] = useState<MultiSelectOption[]>([]);
   const [loadingProjects, setLoadingProjects] = useState(false);
   // Create a shared JiraAPIService instance to maintain cache
-  const [jiraService] = useState(() => new JiraAPIService())
-
+  const [jiraService] = useState(() => new JiraAPIService());
 
   // Initialize search params from URL or defaults
   const [searchParams, setSearchParams] = useState<WorklogSearchParams>(() => {
@@ -138,105 +137,108 @@ function DashboardContent() {
   };
 
   // Debounced fetch function with progressive loading
-  const debouncedFetch = useCallback((params: WorklogSearchParams) => {
-    const timeoutId = setTimeout(async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        setWorklogs([]); // Clear existing worklogs when starting new search
+  const debouncedFetch = useCallback(
+    (params: WorklogSearchParams) => {
+      const timeoutId = setTimeout(async () => {
+        try {
+          setLoading(true);
+          setError(null);
+          setWorklogs([]); // Clear existing worklogs when starting new search
 
-        const allIssues: Record<string, JiraIssue> = {};
+          const allIssues: Record<string, JiraIssue> = {};
 
-        const result = await jiraService.getWorklogs(params, {
-          onWorklogsFound: (newWorklogs, newIssues) => {
-            // Add new issues to our collection
-            Object.assign(allIssues, newIssues);
+          const result = await jiraService.getWorklogs(params, {
+            onWorklogsFound: (newWorklogs, newIssues) => {
+              // Add new issues to our collection
+              Object.assign(allIssues, newIssues);
 
-            // Transform worklogs with issue data
-            const worklogsWithIssues: WorklogWithIssue[] = newWorklogs.map(
-              (worklog) => ({
-                ...worklog,
-                issue: allIssues[
-                  Object.keys(allIssues).find(
-                    (key) => allIssues[key].id === worklog.issueId,
-                  ) || ""
-                ] || {
-                  id: worklog.issueId,
-                  key: "UNKNOWN",
-                  self: "",
-                  fields: {
-                    summary: "Unknown Issue",
-                    issuetype: { name: "Unknown", iconUrl: "" },
-                    project: { key: "UNKNOWN", name: "Unknown Project" },
-                    status: {
-                      name: "Unknown",
-                      statusCategory: { name: "Unknown", colorName: "gray" },
+              // Transform worklogs with issue data
+              const worklogsWithIssues: WorklogWithIssue[] = newWorklogs.map(
+                (worklog) => ({
+                  ...worklog,
+                  issue: allIssues[
+                    Object.keys(allIssues).find(
+                      (key) => allIssues[key].id === worklog.issueId,
+                    ) || ""
+                  ] || {
+                    id: worklog.issueId,
+                    key: "UNKNOWN",
+                    self: "",
+                    fields: {
+                      summary: "Unknown Issue",
+                      issuetype: { name: "Unknown", iconUrl: "" },
+                      project: { key: "UNKNOWN", name: "Unknown Project" },
+                      status: {
+                        name: "Unknown",
+                        statusCategory: { name: "Unknown", colorName: "gray" },
+                      },
                     },
                   },
-                },
-              }),
-            );
-
-            // Update worklogs progressively - append new worklogs and sort
-            setWorklogs((prevWorklogs) => {
-              const combined = [...prevWorklogs, ...worklogsWithIssues];
-              return combined.sort(
-                (a, b) =>
-                  new Date(b.started).getTime() - new Date(a.started).getTime(),
+                }),
               );
-            });
-          },
-        });
 
-        // Merge all issues from final result
-        Object.assign(allIssues, result.issues);
+              // Update worklogs progressively - append new worklogs and sort
+              setWorklogs((prevWorklogs) => {
+                const combined = [...prevWorklogs, ...worklogsWithIssues];
+                return combined.sort(
+                  (a, b) =>
+                    new Date(b.started).getTime() -
+                    new Date(a.started).getTime(),
+                );
+              });
+            },
+          });
 
-        // Final update with any remaining worklogs (in case some weren't emitted progressively)
-        const finalWorklogsWithIssues: WorklogWithIssue[] = result.worklogs.map(
-          (worklog) => ({
-            ...worklog,
-            issue: allIssues[
-              Object.keys(allIssues).find(
-                (key) => allIssues[key].id === worklog.issueId,
-              ) || ""
-            ] || {
-              id: worklog.issueId,
-              key: "UNKNOWN",
-              self: "",
-              fields: {
-                summary: "Unknown Issue",
-                issuetype: { name: "Unknown", iconUrl: "" },
-                project: { key: "UNKNOWN", name: "Unknown Project" },
-                status: {
-                  name: "Unknown",
-                  statusCategory: { name: "Unknown", colorName: "gray" },
+          // Merge all issues from final result
+          Object.assign(allIssues, result.issues);
+
+          // Final update with any remaining worklogs (in case some weren't emitted progressively)
+          const finalWorklogsWithIssues: WorklogWithIssue[] =
+            result.worklogs.map((worklog) => ({
+              ...worklog,
+              issue: allIssues[
+                Object.keys(allIssues).find(
+                  (key) => allIssues[key].id === worklog.issueId,
+                ) || ""
+              ] || {
+                id: worklog.issueId,
+                key: "UNKNOWN",
+                self: "",
+                fields: {
+                  summary: "Unknown Issue",
+                  issuetype: { name: "Unknown", iconUrl: "" },
+                  project: { key: "UNKNOWN", name: "Unknown Project" },
+                  status: {
+                    name: "Unknown",
+                    statusCategory: { name: "Unknown", colorName: "gray" },
+                  },
                 },
               },
-            },
-          }),
-        );
+            }));
 
-        // Set final sorted result
-        setWorklogs(finalWorklogsWithIssues);
-      } catch (err: any) {
-        console.error("Error fetching worklogs:", err);
+          // Set final sorted result
+          setWorklogs(finalWorklogsWithIssues);
+        } catch (err: any) {
+          console.error("Error fetching worklogs:", err);
 
-        // Clear user cache if authentication error
-        if (err.response?.status === 401 || err.response?.status === 403) {
-          jiraService.clearUserCache();
+          // Clear user cache if authentication error
+          if (err.response?.status === 401 || err.response?.status === 403) {
+            jiraService.clearUserCache();
+          }
+
+          setError(
+            err.response?.data?.error ||
+              "Failed to fetch worklogs. Please check your JIRA configuration.",
+          );
+        } finally {
+          setLoading(false);
         }
+      }, 500); // 500ms debounce
 
-        setError(
-          err.response?.data?.error ||
-            "Failed to fetch worklogs. Please check your JIRA configuration.",
-        );
-      } finally {
-        setLoading(false);
-      }
-    }, 500); // 500ms debounce
-
-    return () => clearTimeout(timeoutId);
-  }, [jiraService]);
+      return () => clearTimeout(timeoutId);
+    },
+    [jiraService],
+  );
 
   // Handler for the search button
   const handleSearch = useCallback(() => {

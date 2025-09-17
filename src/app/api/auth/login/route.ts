@@ -33,43 +33,46 @@ export async function POST(request: NextRequest) {
       });
 
       // Set httpOnly cookies with authentication data
-      loginResponse.cookies.set('jira-email', email, {
+      loginResponse.cookies.set("jira-email", email, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
         maxAge: 60 * 60 * 24 * 7, // 7 days
-        path: '/',
+        path: "/",
       });
 
-      loginResponse.cookies.set('jira-token', apiToken, {
+      loginResponse.cookies.set("jira-token", apiToken, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
         maxAge: 60 * 60 * 24 * 7, // 7 days
-        path: '/',
+        path: "/",
       });
 
-      loginResponse.cookies.set('jira-site-url', siteUrl, {
+      loginResponse.cookies.set("jira-site-url", siteUrl, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
         maxAge: 60 * 60 * 24 * 7, // 7 days
-        path: '/',
+        path: "/",
       });
 
       return loginResponse;
-
     } catch (jiraError: any) {
-      console.error("JIRA validation error:", jiraError.response?.data || jiraError.message);
+      console.error(
+        "JIRA validation error:",
+        jiraError.response?.data || jiraError.message,
+      );
       return NextResponse.json(
         {
           error: "Invalid JIRA credentials or site URL",
-          details: jiraError.response?.data?.errorMessages || ["Authentication failed"]
+          details: jiraError.response?.data?.errorMessages || [
+            "Authentication failed",
+          ],
         },
         { status: 401 },
       );
     }
-
   } catch (error: any) {
     console.error("Login error:", error);
     return NextResponse.json(
