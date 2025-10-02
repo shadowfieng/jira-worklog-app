@@ -122,3 +122,6 @@ temp/
 
 # Editor backup files
 *~
+
+# Claude code
+.claude/
