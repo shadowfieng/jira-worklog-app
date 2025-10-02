@@ -85,6 +85,20 @@ function DashboardContent() {
     [router],
   );
 
+  // Load view mode from localStorage on mount and save on changes
+  useEffect(() => {
+    // Load from localStorage on mount
+    const saved = localStorage.getItem("worklog-view-mode");
+    if (saved === "card" || saved === "table") {
+      setViewMode(saved);
+    }
+  }, []);
+
+  useEffect(() => {
+    // Save to localStorage whenever it changes
+    localStorage.setItem("worklog-view-mode", viewMode);
+  }, [viewMode]);
+
   // Fetch JIRA site URL, user info, and projects from server
   useEffect(() => {
     fetch("/api/jira/site-info")
