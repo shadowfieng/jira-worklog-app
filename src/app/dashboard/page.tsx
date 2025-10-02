@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState, Suspense } from "react";
 import { ThemeToggleButton } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tooltip } from "@/components/ui/tooltip";
@@ -402,32 +403,28 @@ function DashboardContent() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="flex flex-col gap-2">
                 <Label htmlFor="start-date">Start Date</Label>
-                <Input
-                  id="start-date"
-                  type="date"
+                <DatePicker
                   value={searchParams.startDate || ""}
-                  onChange={(e) =>
+                  onChange={(value) =>
                     setSearchParams({
                       ...searchParams,
-                      startDate: e.target.value,
+                      startDate: value,
                     })
                   }
-                  onKeyDown={handleKeyPress}
+                  placeholder="Select start date"
                 />
               </div>
               <div className="flex flex-col gap-2">
                 <Label htmlFor="end-date">End Date</Label>
-                <Input
-                  id="end-date"
-                  type="date"
+                <DatePicker
                   value={searchParams.endDate || ""}
-                  onChange={(e) =>
+                  onChange={(value) =>
                     setSearchParams({
                       ...searchParams,
-                      endDate: e.target.value,
+                      endDate: value,
                     })
                   }
-                  onKeyDown={handleKeyPress}
+                  placeholder="Select end date"
                 />
               </div>
               <div className="flex flex-col gap-2">
