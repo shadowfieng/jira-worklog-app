@@ -9,7 +9,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { ToastContainer } from "@/components/ui/toast";
 import { Tooltip } from "@/components/ui/tooltip";
+import { useToast } from "@/hooks/use-toast";
 import {
   JiraAPIService,
   type JiraIssue,
@@ -37,6 +39,7 @@ function DashboardContent() {
   const [projects, setProjects] = useState<MultiSelectOption[]>([]);
   const [loadingProjects, setLoadingProjects] = useState(false);
   const [viewMode, setViewMode] = useState<"card" | "table">("card");
+  const { toasts, showToast, dismissToast } = useToast();
   // Create a shared JiraAPIService instance to maintain cache
   const [jiraService] = useState(() => new JiraAPIService());
 
@@ -341,8 +344,24 @@ function DashboardContent() {
     return sortedGroups;
   };
 
+  const copyIssueSummary = async (worklog: WorklogWithIssue) => {
+    const issueUrl = jiraSiteUrl
+      ? `${jiraSiteUrl}/browse/${worklog.issue.key}`
+      : "";
+    const text = `[${worklog.issue.key}](${issueUrl}) - ${worklog.issue.fields.summary}`;
+
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast("Summary copied to clipboard");
+    } catch (err) {
+      console.error("Failed to copy:", err);
+      showToast("Failed to copy to clipboard", "error");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
       {/* Header */}
       <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -637,7 +656,7 @@ function DashboardContent() {
                             </th>
                             <th
                               className="text-foreground h-10 px-2 text-left align-middle font-medium"
-                              style={{ width: "400px" }}
+                              style={{ width: "450px" }}
                             >
                               Summary
                             </th>
@@ -685,14 +704,41 @@ function DashboardContent() {
                                 </a>
                               </td>
                               <td
-                                className="p-2 align-middle"
-                                style={{ width: "400px" }}
+                                className="p-2 align-middle overflow-hidden"
+                                style={{ width: "450px", maxWidth: "450px" }}
                               >
-                                <Tooltip content={worklog.issue.fields.summary}>
-                                  <div className="truncate cursor-default">
-                                    {worklog.issue.fields.summary}
+                                <div className="flex items-center gap-2 w-full">
+                                  <div className="flex-1 min-w-0 overflow-hidden">
+                                    <Tooltip content={worklog.issue.fields.summary}>
+                                      <div className="truncate cursor-default">
+                                        {worklog.issue.fields.summary}
+                                      </div>
+                                    </Tooltip>
                                   </div>
-                                </Tooltip>
+                                  <button
+                                    type="button"
+                                    onClick={() => copyIssueSummary(worklog)}
+                                    className="flex-shrink-0 p-1.5 hover:bg-muted rounded transition-colors"
+                                    title="Copy issue summary with link"
+                                  >
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      width="14"
+                                      height="14"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth="2"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      aria-label="Copy"
+                                    >
+                                      <title>Copy</title>
+                                      <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                    </svg>
+                                  </button>
+                                </div>
                               </td>
                               <td
                                 className="p-2 align-middle"
@@ -760,25 +806,50 @@ function DashboardContent() {
                               )}
                             </div>
                             <div className="flex-1 min-w-0">
-                              <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-2">
-                                <a
-                                  href={
-                                    jiraSiteUrl
-                                      ? `${jiraSiteUrl}/browse/${worklog.issue.key}`
-                                      : "#"
-                                  }
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-sm font-medium text-primary hover:text-primary/80 flex-shrink-0"
+                              <div className="flex items-start gap-2">
+                                <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-2 flex-1 min-w-0">
+                                  <a
+                                    href={
+                                      jiraSiteUrl
+                                        ? `${jiraSiteUrl}/browse/${worklog.issue.key}`
+                                        : "#"
+                                    }
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-sm font-medium text-primary hover:text-primary/80 flex-shrink-0"
+                                  >
+                                    {worklog.issue.key}
+                                  </a>
+                                  <span className="hidden sm:inline text-sm text-muted-foreground">
+                                    •
+                                  </span>
+                                  <span className="text-sm line-clamp-2 sm:truncate">
+                                    {worklog.issue.fields.summary}
+                                  </span>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => copyIssueSummary(worklog)}
+                                  className="flex-shrink-0 p-1.5 hover:bg-muted rounded transition-colors"
+                                  title="Copy issue summary with link"
                                 >
-                                  {worklog.issue.key}
-                                </a>
-                                <span className="hidden sm:inline text-sm text-muted-foreground">
-                                  •
-                                </span>
-                                <span className="text-sm line-clamp-2 sm:truncate">
-                                  {worklog.issue.fields.summary}
-                                </span>
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    width="14"
+                                    height="14"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    aria-label="Copy"
+                                  >
+                                    <title>Copy</title>
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                                  </svg>
+                                </button>
                               </div>
                               <div className="mt-2 flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-4 text-xs sm:text-sm text-muted-foreground">
                                 <span className="flex-shrink-0">
