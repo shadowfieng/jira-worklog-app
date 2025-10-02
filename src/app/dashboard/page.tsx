@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tooltip } from "@/components/ui/tooltip";
 import {
   JiraAPIService,
   type JiraIssue,
@@ -34,6 +35,7 @@ function DashboardContent() {
   const [currentUser, setCurrentUser] = useState<JiraUser | null>(null);
   const [projects, setProjects] = useState<MultiSelectOption[]>([]);
   const [loadingProjects, setLoadingProjects] = useState(false);
+  const [viewMode, setViewMode] = useState<"card" | "table">("card");
   // Create a shared JiraAPIService instance to maintain cache
   const [jiraService] = useState(() => new JiraAPIService());
 
@@ -523,7 +525,61 @@ function DashboardContent() {
         {/* Worklogs List */}
         <Card>
           <CardHeader>
-            <CardTitle>Recent Worklogs</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>Recent Worklogs</CardTitle>
+              <div className="flex gap-1">
+                <Button
+                  variant={viewMode === "card" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setViewMode("card")}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="mr-1"
+                  >
+                    <title>Card View</title>
+                    <rect x="3" y="3" width="7" height="7" />
+                    <rect x="14" y="3" width="7" height="7" />
+                    <rect x="14" y="14" width="7" height="7" />
+                    <rect x="3" y="14" width="7" height="7" />
+                  </svg>
+                  Card
+                </Button>
+                <Button
+                  variant={viewMode === "table" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setViewMode("table")}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="mr-1"
+                  >
+                    <title>Table View</title>
+                    <rect x="3" y="3" width="18" height="18" rx="2" />
+                    <line x1="3" y1="9" x2="21" y2="9" />
+                    <line x1="3" y1="15" x2="21" y2="15" />
+                    <line x1="9" y1="3" x2="9" y2="21" />
+                  </svg>
+                  Table
+                </Button>
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="p-0">
             {loading && worklogs.length === 0 ? (
@@ -538,6 +594,126 @@ function DashboardContent() {
                 <p className="text-muted-foreground">
                   No worklogs found for the selected criteria.
                 </p>
+              </div>
+            ) : viewMode === "table" ? (
+              <div className="space-y-6">
+                {groupWorklogsByDate().map((group) => (
+                  <div key={group.date}>
+                    {/* Date Header */}
+                    <div className="flex items-center justify-between px-4 sm:px-6 py-3 bg-muted/30 border-b">
+                      <h3 className="text-lg font-semibold">
+                        {format(new Date(group.date), "EEEE, MMMM dd, yyyy")}
+                      </h3>
+                      <div className="text-sm font-medium text-green-600 dark:text-green-400">
+                        {formatTimeSpent(group.totalTime)}
+                      </div>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full caption-bottom text-sm table-fixed">
+                        <thead className="[&_tr]:border-b">
+                          <tr className="border-b transition-colors">
+                            <th
+                              className="text-foreground h-10 px-2 text-left align-middle font-medium"
+                              style={{ width: "80px" }}
+                            >
+                              Time
+                            </th>
+                            <th
+                              className="text-foreground h-10 px-2 text-left align-middle font-medium"
+                              style={{ width: "120px" }}
+                            >
+                              Issue
+                            </th>
+                            <th
+                              className="text-foreground h-10 px-2 text-left align-middle font-medium"
+                              style={{ width: "400px" }}
+                            >
+                              Summary
+                            </th>
+                            <th
+                              className="text-foreground h-10 px-2 text-left align-middle font-medium"
+                              style={{ width: "120px" }}
+                            >
+                              Time Spent
+                            </th>
+                            <th
+                              className="text-foreground h-10 px-2 text-left align-middle font-medium"
+                              style={{ width: "300px" }}
+                            >
+                              Comment
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="[&_tr:last-child]:border-0">
+                          {group.worklogs.map((worklog) => (
+                            <tr
+                              key={worklog.id}
+                              className="hover:bg-muted/50 border-b transition-colors"
+                            >
+                              <td
+                                className="p-2 align-middle"
+                                style={{ width: "80px" }}
+                              >
+                                {format(new Date(worklog.started), "HH:mm")}
+                              </td>
+                              <td
+                                className="p-2 align-middle"
+                                style={{ width: "120px" }}
+                              >
+                                <a
+                                  href={
+                                    jiraSiteUrl
+                                      ? `${jiraSiteUrl}/browse/${worklog.issue.key}`
+                                      : "#"
+                                  }
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-primary hover:text-primary/80 font-medium"
+                                >
+                                  {worklog.issue.key}
+                                </a>
+                              </td>
+                              <td
+                                className="p-2 align-middle"
+                                style={{ width: "400px" }}
+                              >
+                                <Tooltip content={worklog.issue.fields.summary}>
+                                  <div className="truncate cursor-default">
+                                    {worklog.issue.fields.summary}
+                                  </div>
+                                </Tooltip>
+                              </td>
+                              <td
+                                className="p-2 align-middle"
+                                style={{ width: "120px" }}
+                              >
+                                <span className="font-medium text-green-600 dark:text-green-400">
+                                  {formatTimeSpent(worklog.timeSpentSeconds)}
+                                </span>
+                              </td>
+                              <td
+                                className="p-2 align-middle"
+                                style={{ width: "300px" }}
+                              >
+                                <Tooltip
+                                  content={
+                                    worklog.comment?.content?.[0]?.content?.[0]
+                                      ?.text || "-"
+                                  }
+                                >
+                                  <div className="truncate text-muted-foreground cursor-default">
+                                    {worklog.comment?.content?.[0]?.content?.[0]
+                                      ?.text || "-"}
+                                  </div>
+                                </Tooltip>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : (
               <div className="space-y-6">
